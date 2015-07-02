@@ -406,6 +406,17 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             }
             else
             {
+                if (imageUri == null) {
+                    PictureInfo mPic = readPictureInfo();
+                    if (mPic == null) {
+                        this.failPicture("Error capturing image - no picture found.");
+                        return;
+                    }
+
+                    imageUri = mPic.uri;
+                    debug(this.getClass(), String.format("read imageUri from saved path:%s.", imageUri));
+                }
+                
                 bitmap = getScaledBitmap(FileHelper.stripFileProtocol(imageUri.toString()));
             }
             if (bitmap == null) {
@@ -451,7 +462,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     !this.correctOrientation) {
                 writeUncompressedImage(uri);
 
-                this.callbackContext.success(uri.toString());
+                if (this.callbackContext != null) {
+                    this.callbackContext.success(uri.toString());
+                }
             } else {
             	debug(this.getClass(), "imageUri != null: " + (imageUri != null));
             	
@@ -489,9 +502,6 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 if(this.saveToPhotoAlbum) {
                     refreshGallery(uri);
                 }
-
-                debug(this.getClass(), "this.callbackContext != null : " + (this.callbackContext != null));
-                debug(this.getClass(), "After uri:" + (uri != null ? uri.toString() : "uri is null"));
 
 				if (this.callbackContext != null) {
 					// Send Uri back to JavaScript for viewing image
@@ -573,14 +583,18 @@ private String ouputModifiedBitmap(Bitmap bitmap, Uri uri) throws IOException {
         // If you ask for video or all media type you will automatically get back a file URI
         // and there will be no attempt to resize any returned data
         if (this.mediaType != PICTURE) {
-            this.callbackContext.success(uri.toString());
+            if (this.callbackContext != null) {
+                this.callbackContext.success(uri.toString());
+            }
         }
         else {
             // This is a special case to just return the path as no scaling,
             // rotating, nor compressing needs to be done
             if (this.targetHeight == -1 && this.targetWidth == -1 &&
                     (destType == FILE_URI || destType == NATIVE_URI) && !this.correctOrientation) {
-                this.callbackContext.success(uri.toString());
+                if (this.callbackContext != null) {
+                    this.callbackContext.success(uri.toString());
+                }
             } else {
                 String uriString = uri.toString();
                 // Get the path to the image. Makes loading so much easier.
@@ -631,14 +645,16 @@ private String ouputModifiedBitmap(Bitmap bitmap, Uri uri) throws IOException {
                             String modifiedPath = this.ouputModifiedBitmap(bitmap, uri);
                             // The modified image is cached by the app in order to get around this and not have to delete you
                             // application cache I'm adding the current system time to the end of the file url.
-                            this.callbackContext.success("file://" + modifiedPath + "?" + System.currentTimeMillis());
+                            if (this.callbackContext != null) {
+                                this.callbackContext.success("file://" + modifiedPath + "?" + System.currentTimeMillis());
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                             this.failPicture("Error retrieving image.");
                         }
                     }
                     else {
-						if (this.callbackContext != null) {
+						if (this.callbackContext!= null) {
 							this.callbackContext.success(uri.toString());
 						}
                     }
@@ -1077,7 +1093,9 @@ private String ouputModifiedBitmap(Bitmap bitmap, Uri uri) throws IOException {
                 byte[] code = jpeg_data.toByteArray();
                 byte[] output = Base64.encode(code, Base64.NO_WRAP);
                 String js_out = new String(output);
-                this.callbackContext.success(js_out);
+                if (this.callbackContext != null) {
+                    this.callbackContext.success(js_out);
+                }
                 js_out = null;
                 output = null;
                 code = null;
@@ -1094,7 +1112,9 @@ private String ouputModifiedBitmap(Bitmap bitmap, Uri uri) throws IOException {
      * @param err
      */
     public void failPicture(String err) {
-        this.callbackContext.error(err);
+        if (this.callbackContext != null) {
+            this.callbackContext.error(err);            
+        }
     }
 
     private void scanForGallery(Uri newImage) {
